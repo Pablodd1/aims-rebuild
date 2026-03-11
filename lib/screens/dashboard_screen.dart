@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import '../router.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   Future<void> _signOut(BuildContext context) async {
-    await Supabase.instance.client.auth.signOut();
+    if (AimsRouter.isDemoMode) {
+      AimsRouter.isDemoMode = false;
+    } else {
+      await Supabase.instance.client.auth.signOut();
+    }
     if (context.mounted) {
       context.go('/login');
     }
@@ -77,80 +82,101 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome, ${user?.email ?? 'Provider'}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text('AIMS Enterprise EHR • ${DateTime.now().toString().substring(0, 10)}', style: TextStyle(color: Colors.grey[600])),
-            const SizedBox(height: 32),
-            // Quick Actions Grid
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.4,
+      body: Column(
+        children: [
+          if (AimsRouter.isDemoMode)
+            Container(
+              color: Colors.amber[100],
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: const Row(
                 children: [
-                  _DashboardCard(
-                    icon: Icons.people,
-                    title: 'Patient Registry',
-                    subtitle: 'View, search & manage patients',
-                    color: const Color(0xFF0056D2),
-                    onTap: () => context.push('/patients'),
+                  Icon(Icons.info_outline, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Demo Mode: Live data is limited. Signing out will return to login.',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange)),
+                ],
+              ),
+            ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AimsRouter.isDemoMode ? 'Welcome, Demo User' : 'Welcome, ${user?.email ?? 'Provider'}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  _DashboardCard(
-                    icon: Icons.note_add,
-                    title: 'AI Scribe',
-                    subtitle: 'Ambient SOAP note generator',
-                    color: Colors.teal,
-                    onTap: () => context.push('/scribe?patientId=&name=Select+Patient'),
-                  ),
-                  _DashboardCard(
-                    icon: Icons.upload_file,
-                    title: 'Import Patients',
-                    subtitle: 'Bulk CSV upload from legacy EHR',
-                    color: Colors.deepPurple,
-                    onTap: () => context.push('/patients/import'),
-                  ),
-                  _DashboardCard(
-                    icon: Icons.calendar_today,
-                    title: 'Appointments',
-                    subtitle: 'Schedule & manage visits',
-                    color: Colors.orange,
-                    onTap: () => context.push('/appointments'),
-                  ),
-                  _DashboardCard(
-                    icon: Icons.science,
-                    title: 'Lab Interpreter',
-                    subtitle: 'AI-powered lab analysis',
-                    color: Colors.indigo,
-                    onTap: () {},
-                  ),
-                  _DashboardCard(
-                    icon: Icons.receipt_long,
-                    title: 'Billing & RCM',
-                    subtitle: 'Invoices, claims & revenue',
-                    color: Colors.green,
-                    onTap: () => context.push('/billing'),
-                  ),
-                  _DashboardCard(
-                    icon: Icons.monitor_heart,
-                    title: 'RPM Vitals',
-                    subtitle: 'Bluetooth device monitoring',
-                    color: Colors.red,
-                    onTap: () {},
+                  const SizedBox(height: 8),
+                  Text('AIMS Enterprise EHR • ${DateTime.now().toString().substring(0, 10)}',
+                      style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 32),
+                  // Quick Actions Grid
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1.4,
+                      children: [
+                        _DashboardCard(
+                          icon: Icons.people,
+                          title: 'Patient Registry',
+                          subtitle: 'View, search & manage patients',
+                          color: const Color(0xFF0056D2),
+                          onTap: () => context.push('/patients'),
+                        ),
+                        // ... (rest of the cards)
+                        _DashboardCard(
+                          icon: Icons.note_add,
+                          title: 'AI Scribe',
+                          subtitle: 'Ambient SOAP note generator',
+                          color: Colors.teal,
+                          onTap: () => context.push('/scribe?patientId=&name=Select+Patient'),
+                        ),
+                        _DashboardCard(
+                          icon: Icons.upload_file,
+                          title: 'Import Patients',
+                          subtitle: 'Bulk CSV upload from legacy EHR',
+                          color: Colors.deepPurple,
+                          onTap: () => context.push('/patients/import'),
+                        ),
+                        _DashboardCard(
+                          icon: Icons.calendar_today,
+                          title: 'Appointments',
+                          subtitle: 'Schedule & manage visits',
+                          color: Colors.orange,
+                          onTap: () => context.push('/appointments'),
+                        ),
+                        _DashboardCard(
+                          icon: Icons.science,
+                          title: 'Lab Interpreter',
+                          subtitle: 'AI-powered lab analysis',
+                          color: Colors.indigo,
+                          onTap: () {},
+                        ),
+                        _DashboardCard(
+                          icon: Icons.receipt_long,
+                          title: 'Billing & RCM',
+                          subtitle: 'Invoices, claims & revenue',
+                          color: Colors.green,
+                          onTap: () => context.push('/billing'),
+                        ),
+                        _DashboardCard(
+                          icon: Icons.monitor_heart,
+                          title: 'RPM Vitals',
+                          subtitle: 'Bluetooth device monitoring',
+                          color: Colors.red,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

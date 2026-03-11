@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -8,10 +9,12 @@ class AppointmentsScreen extends StatefulWidget {
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
 }
 
-class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _AppointmentsScreenState extends State<AppointmentsScreen> {
   List<Map<String, dynamic>> _appointments = [];
   bool _isLoading = true;
+
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   final _statusColors = {
     'scheduled': Colors.blue,
@@ -26,7 +29,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _selectedDay = _focusedDay;
     _loadAppointments();
   }
 
@@ -46,38 +49,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     }
   }
 
-  List<Map<String, dynamic>> get _todayAppts {
-    final today = DateTime.now();
+  List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
     return _appointments.where((a) {
-      final d = DateTime.tryParse(a['appointment_date'] ?? '');
-      return d != null && d.year == today.year && d.month == today.month && d.day == today.day;
-    }).toList();
-  }
-
-  List<Map<String, dynamic>> get _upcomingAppts {
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
-    return _appointments.where((a) {
-      final d = DateTime.tryParse(a['appointment_date'] ?? '');
-      return d != null && d.isAfter(tomorrow);
-    }).toList();
-  }
-
-  List<Map<String, dynamic>> get _pastAppts {
-    final today = DateTime.now();
-    return _appointments.where((a) {
-      final d = DateTime.tryParse(a['appointment_date'] ?? '');
-      return d != null && d.isBefore(DateTime(today.year, today.month, today.day));
+      final dStr = a['appointment_date'];
+      if (dStr == null) return false;
+      final d = DateTime.tryParse(dStr);
+      if (d == null) return false;
+      return d.year == day.year && d.month == day.month && d.day == day.day;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Appointments'),
+        title: const Text('Appointments Schedule'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Calendar',
             onPressed: _loadAppointments,
           ),
           IconButton(
@@ -86,23 +77,48 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
             onPressed: () => _showNewAppointmentDialog(),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'Today (${_todayAppts.length})'),
-            const Tab(text: 'Upcoming'),
-            const Tab(text: 'Past'),
-          ],
-        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+          : Column(
               children: [
-                _buildApptList(_todayAppts),
-                _buildApptList(_upcomingAppts),
-                _buildApptList(_pastAppts),
+                Container(
+                  color: Colors.white,
+                  child: TableCalendar(
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    eventLoader: _getEventsForDay,
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      selectedDecoration: const BoxDecoration(
+                        color: Color(0xFF0056D2),
+                        shape: BoxShape.circle,
+                      ),
+                      markerDecoration: const BoxDecoration(
+                        color: Colors.deepOrange,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: true,
+                      titleCentered: true,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _buildApptList(_getEventsForDay(_selectedDay ?? _focusedDay)),
+                ),
               ],
             ),
     );
@@ -110,7 +126,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
 
   Widget _buildApptList(List<Map<String, dynamic>> appts) {
     if (appts.isEmpty) {
-      return const Center(child: Text('No appointments in this period.'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_available, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text('No appointments scheduled for this date.', style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -123,52 +148,56 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
             : 'Unknown Patient';
         final dateStr = a['appointment_date'] ?? '';
         final dt = DateTime.tryParse(dateStr);
-        final formattedDate = dt != null
-            ? '${dt.month}/${dt.day}/${dt.year} at ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}'
-            : dateStr;
+        final timeStr = dt != null
+            ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
+            : '';
         final status = a['status'] ?? 'scheduled';
         final statusColor = _statusColors[status] ?? Colors.grey;
 
         return Card(
+          elevation: 1,
           margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
               backgroundColor: statusColor.withOpacity(0.15),
               child: Icon(_visitTypeIcon(a['visit_type']), color: statusColor),
             ),
             title: Row(
               children: [
+                Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                const SizedBox(width: 8),
                 Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    border: Border.all(color: statusColor),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(status.replaceAll('_', ' ').toUpperCase(),
-                      style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold)),
-                ),
               ],
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Row(children: [
-                  const Icon(Icons.schedule, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(formattedDate, style: const TextStyle(fontSize: 13)),
-                ]),
-                if ((a['reason'] ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                if ((a['reason'] ?? '').isNotEmpty)
                   Text(a['reason'], style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                ],
               ],
             ),
             trailing: PopupMenuButton<String>(
               onSelected: (val) => _updateStatus(a['id'], val),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  border: Border.all(color: statusColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(status.replaceAll('_', ' ').toUpperCase(),
+                        style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_drop_down, size: 16, color: statusColor),
+                  ],
+                ),
+              ),
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 'confirmed', child: Text('✅ Confirm')),
                 const PopupMenuItem(value: 'checked_in', child: Text('🏥 Check In')),

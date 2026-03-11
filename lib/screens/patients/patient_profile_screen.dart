@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,7 +33,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
           .eq('id', widget.patientId)
           .single();
       final notesRes = await Supabase.instance.client
-          .from('medical_notes')
+          .from('clinical_notes')
           .select()
           .eq('patient_id', widget.patientId)
           .order('created_at', ascending: false);
@@ -61,6 +62,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
       appBar: AppBar(
         title: Text(name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.link),
+            tooltip: 'Copy Intake Link',
+            onPressed: _copyIntakeLink,
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             tooltip: 'Export Full EHR Record',
@@ -148,17 +154,18 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
       itemCount: _notes.length,
       itemBuilder: (ctx, i) {
         final n = _notes[i];
-        final isSigned = n['status'] == 'signed';
-        final title = n['title'] ?? 'Untitled Note';
-        final created = n['created_at'] ?? '';
+        final isSigned = n['is_signed'] == true || n['status'] == 'signed';
+        final isIntake = n['note_type'] == 'intake_form';
+        final title = isIntake ? 'Intake Form (Voice/Text)' : (n['title'] ?? 'Untitled Note');
+        final created = n['created_at'] != null ? n['created_at'].toString().substring(0, 10) : '';
         return Card(
           child: ListTile(
             leading: Icon(
-              isSigned ? Icons.verified : Icons.edit_note,
-              color: isSigned ? Colors.green : Colors.orange,
+              isIntake ? Icons.assignment_ind : (isSigned ? Icons.verified : Icons.edit_note),
+              color: isIntake ? Colors.blue : (isSigned ? Colors.green : Colors.orange),
             ),
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Created: $created • Status: ${n['status'] ?? 'draft'}'),
+            subtitle: Text('Date: $created • Type: ${n['note_type'] ?? 'clinical'}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -206,4 +213,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
       ),
     );
   }
+
+  void _copyIntakeLink() {
+    final link = 'https://aims-rebuild.vercel.app/intake/${widget.patientId}';
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Copied Public Intake Link: $link'), duration: const Duration(seconds: 4)),
+    );
+  }
+
 }

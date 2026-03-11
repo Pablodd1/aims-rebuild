@@ -12,13 +12,22 @@ import 'screens/clinical/ambient_scribe_screen.dart';
 import 'screens/appointments/appointments_screen.dart';
 import 'screens/billing/billing_screen.dart';
 
+import 'screens/patients/public_intake_screen.dart';
+
+class AimsRouter {
+  static bool isDemoMode = false;
+}
+
 final goRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
+    if (AimsRouter.isDemoMode) return null; // Bypass for demo
+    
     final session = Supabase.instance.client.auth.currentSession;
     final isLoggingIn = state.uri.toString() == '/login';
+    final isPublicIntake = state.uri.toString().startsWith('/intake/');
 
-    if (session == null && !isLoggingIn) {
+    if (session == null && !isLoggingIn && !isPublicIntake) {
       return '/login';
     }
     if (session != null && isLoggingIn) {
@@ -45,6 +54,13 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/patients',
       builder: (context, state) => const PatientListScreen(),
+    ),
+    GoRoute(
+      path: '/intake/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return PublicIntakeScreen(patientId: id);
+      },
     ),
     GoRoute(
       path: '/patients/new',

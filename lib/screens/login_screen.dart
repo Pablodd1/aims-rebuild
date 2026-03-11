@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import '../router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -150,6 +151,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Secure Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: () {
+                    AimsRouter.isDemoMode = true;
+                    context.go('/dashboard');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Try Demo Mode (View Only)', style: TextStyle(color: Colors.grey)),
                 ),
               ],
             ),
