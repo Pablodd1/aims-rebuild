@@ -1,0 +1,46 @@
+# Flutter
+/build/
+.dart_tool/
+.packages
+.pub/
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Android
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+*.apk
+*.aab
+
+# iOS
+/ios/.symlinks/
+/ios/Pods/
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+
+# macOS
+/macos/Flutter/ephemeral/
+
+# Windows
+/windows/flutter/ephemeral/
+
+# Linux
+/linux/flutter/ephemeral/
+
+# Web
+/web/favicon.png
+
+# Env & Secrets - NEVER commit
+.env
+.env.*
+*.pem
+*.key
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+pubspec.lock
