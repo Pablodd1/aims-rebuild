@@ -62,7 +62,7 @@ class DashboardScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: const Text('Appointments'),
-              onTap: () { Navigator.pop(context); },
+              onTap: () { Navigator.pop(context); context.push('/appointments'); },
             ),
             ListTile(
               leading: const Icon(Icons.analytics),
@@ -70,9 +70,9 @@ class DashboardScreen extends StatelessWidget {
               onTap: () { Navigator.pop(context); },
             ),
             ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: const Text('Clinical Settings'),
-              onTap: () { Navigator.pop(context); },
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('Billing & RCM'),
+              onTap: () { Navigator.pop(context); context.push('/billing'); },
             ),
           ],
         ),
@@ -107,9 +107,9 @@ class DashboardScreen extends StatelessWidget {
                   _DashboardCard(
                     icon: Icons.note_add,
                     title: 'AI Scribe',
-                    subtitle: 'New clinical note with ambient AI',
+                    subtitle: 'Ambient SOAP note generator',
                     color: Colors.teal,
-                    onTap: () => context.push('/notes/new?patientId='),
+                    onTap: () => context.push('/scribe?patientId=&name=Select+Patient'),
                   ),
                   _DashboardCard(
                     icon: Icons.upload_file,
@@ -123,7 +123,7 @@ class DashboardScreen extends StatelessWidget {
                     title: 'Appointments',
                     subtitle: 'Schedule & manage visits',
                     color: Colors.orange,
-                    onTap: () {},
+                    onTap: () => context.push('/appointments'),
                   ),
                   _DashboardCard(
                     icon: Icons.science,
@@ -131,6 +131,13 @@ class DashboardScreen extends StatelessWidget {
                     subtitle: 'AI-powered lab analysis',
                     color: Colors.indigo,
                     onTap: () {},
+                  ),
+                  _DashboardCard(
+                    icon: Icons.receipt_long,
+                    title: 'Billing & RCM',
+                    subtitle: 'Invoices, claims & revenue',
+                    color: Colors.green,
+                    onTap: () => context.push('/billing'),
                   ),
                   _DashboardCard(
                     icon: Icons.monitor_heart,

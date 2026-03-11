@@ -8,6 +8,9 @@ import 'screens/patients/patient_profile_screen.dart';
 import 'screens/patients/add_patient_screen.dart';
 import 'screens/patients/import_patients_screen.dart';
 import 'screens/clinical/note_editor.dart';
+import 'screens/clinical/ambient_scribe_screen.dart';
+import 'screens/appointments/appointments_screen.dart';
+import 'screens/billing/billing_screen.dart';
 
 final goRouter = GoRouter(
   initialLocation: '/',
@@ -65,6 +68,25 @@ final goRouter = GoRouter(
         final patientId = state.uri.queryParameters['patientId'] ?? '';
         return NoteEditorScreen(patientId: patientId);
       },
+    ),
+    // Ambient Scribe
+    GoRoute(
+      path: '/scribe',
+      builder: (context, state) {
+        final patientId = state.uri.queryParameters['patientId'] ?? '';
+        final patientName = state.uri.queryParameters['name'] ?? 'Patient';
+        return AmbientScribeScreen(patientId: patientId, patientName: patientName);
+      },
+    ),
+    // Appointments
+    GoRoute(
+      path: '/appointments',
+      builder: (context, state) => const AppointmentsScreen(),
+    ),
+    // Billing
+    GoRoute(
+      path: '/billing',
+      builder: (context, state) => const BillingScreen(),
     ),
   ],
 );
