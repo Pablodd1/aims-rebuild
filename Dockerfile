@@ -10,8 +10,8 @@ RUN flutter pub get
 # Copy source
 COPY . .
 
-# Build web
-RUN flutter build web --release
+# Build web with HTML renderer for better compatibility
+RUN flutter build web --release --web-renderer html
 
 # Production stage - use a simple Python HTTP server instead of nginx
 FROM python:3.11-slim
