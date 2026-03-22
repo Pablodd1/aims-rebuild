@@ -15,7 +15,7 @@ import 'screens/billing/billing_screen.dart';
 import 'screens/patients/public_intake_screen.dart';
 
 class AimsRouter {
-  static bool isDemoMode = false;
+  static bool isDemoMode = true; // Enable demo mode for Railway deployment
 }
 
 final goRouter = GoRouter(
