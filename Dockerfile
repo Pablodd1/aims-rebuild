@@ -1,53 +1,29 @@
-# ============================================
-# FILE: Dockerfile
-# PURPOSE: Multi-stage build for Flutter Web to be deployed on Railway
-# DEPENDENCIES: nginx:alpine, flutter[stable]
-# ============================================
+# Flutter Web for Railway - Optimized Build
+FROM ghcr.io/cirruslabs/flutter:stable AS build
 
-# STAGE 1: The Heavy Lifter (Flutter Build)
-FROM debian:stable-slim AS build
-
-# No-interaction frontend to avoid hanging
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Essential packages for Flutter and Web deployment
-RUN apt-get update && apt-get install -y \
-    curl git unzip xz-utils libglu1-mesa python3 libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Flutter stable channel
-RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
-ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
-
-# Audit and verify Flutter environment
-RUN flutter doctor -v
-RUN flutter config --enable-web
-
-# Setup working directory and build the app
 WORKDIR /app
-COPY . .
 
-# Fetch dependencies
+# Copy and get dependencies first (better caching)
+COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
-# Build production web release (optimized)
-RUN flutter build web --release --no-tree-shake-icons --source-maps
+# Copy source
+COPY . .
 
-# STAGE 2: The Slim Runner (Nginx Runtime)
-FROM nginx:alpine
+# Build web
+RUN flutter build web --release
 
-# Clear default static files
-RUN rm -rf /usr/share/nginx/html/*
+# Production stage - use a simple Python HTTP server instead of nginx
+FROM python:3.11-slim
 
-# Copy build artifacts from previous stage
-COPY --from=build /app/build/web /usr/share/nginx/html
+WORKDIR /app
 
-# Copy optimized Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built web app
+COPY --from=build /app/build/web ./
 
-# Use Railway's PORT env var (defaults to 3000)
+# Use PORT env var with default 3000
 ENV PORT=3000
 EXPOSE 3000
 
-# Dynamically replace nginx port and start
-CMD sh -c "sed -i 's/listen 80/listen '$PORT'/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+# Simple Python HTTP server on Railway's PORT
+CMD python -m http.server $PORT
