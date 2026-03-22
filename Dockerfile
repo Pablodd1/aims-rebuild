@@ -45,9 +45,9 @@ COPY --from=build /app/build/web /usr/share/nginx/html
 # Copy optimized Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Port is usually 80 inside the container, but Railway maps $PORT
-EXPOSE 80
+# Use Railway's PORT env var (defaults to 3000)
+ENV PORT=3000
+EXPOSE 3000
 
-# Use a shell script style command to dynamically bind to RAILWAY's $PORT if needed
-# Railway's newer proxy usually handles port 80, but this ensures compatibility
-CMD ["nginx", "-g", "daemon off;"]
+# Dynamically replace nginx port and start
+CMD sh -c "sed -i 's/listen 80/listen '$PORT'/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
