@@ -10,16 +10,19 @@ RUN flutter pub get
 # Copy source
 COPY . .
 
-# Build web with HTML renderer for better compatibility
-RUN flutter build web --release --web-renderer html
+# Build web with HTML renderer and correct base href
+RUN flutter build web --release --web-renderer html --base-href "/"
 
-# Production stage - use a simple Python HTTP server instead of nginx
+# Production stage - use a simple Python HTTP server
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy built web app
-COPY --from=build /app/build/web ./
+# Copy built web app contents (trailing slash ensures contents are copied)
+COPY --from=build /app/build/web/ ./
+
+# Verify the build output exists
+RUN ls -la
 
 # Use PORT env var with default 3000
 ENV PORT=3000
