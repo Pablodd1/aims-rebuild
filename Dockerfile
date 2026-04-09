@@ -1,32 +1,45 @@
-# Flutter Web for Railway - Optimized Build
+# ============================================
+# FILE: Dockerfile
+# PURPOSE: Multi-stage build for Flutter Web on Railway
+# FEATURES: Env-var injection, CanvasKit renderer, Nginx SPA routing
+# ============================================
+
+# STAGE 1: Build Stage
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
 
-# Copy and get dependencies first (better caching)
+# Copy dependencies first for better caching
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
-# Copy source
+# Copy source code
 COPY . .
 
-# Build web with HTML renderer and correct base href
-RUN flutter build web --release --web-renderer html --base-href "/"
+# Build Arguments for Supabase (Passed from Railway Variables)
+ARG SUPABASE_URL
+ARG SUPABASE_ANON_KEY
 
-# Production stage - use a simple Python HTTP server
-FROM python:3.11-slim
+# Build the web application
+# --web-renderer canvaskit: ensures visual consistency
+# --dart-define: injects keys at build time
+RUN flutter build web --release \
+    --web-renderer canvaskit \
+    --dart-define=SUPABASE_URL=$SUPABASE_URL \
+    --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+    --no-tree-shake-icons
 
-WORKDIR /app
+# STAGE 2: Runtime Stage
+FROM nginx:alpine
 
-# Copy built web app contents (trailing slash ensures contents are copied)
-COPY --from=build /app/build/web/ ./
+# Copy built artifacts
+COPY --from=build /app/build/web /usr/share/nginx/html
 
-# Verify the build output exists
-RUN ls -la
+# Copy our optimized Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Use PORT env var with default 3000
-ENV PORT=3000
-EXPOSE 3000
+# Expose port (Internal for Nginx, Railway proxy maps it)
+EXPOSE 80
 
-# Simple Python HTTP server on Railway's PORT
-CMD python -m http.server $PORT
+# Keep Nginx running
+CMD ["nginx", "-g", "daemon off;"]
