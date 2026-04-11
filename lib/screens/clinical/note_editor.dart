@@ -142,10 +142,34 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               setState(() => _isSigned = true);
-              // TODO: Trigger Supabase update: status='signed', signed_at=NOW()
+              
+              try {
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                await Supabase.instance.client.from('clinical_notes').update({
+                  'status': 'signed',
+                  'is_signed': true,
+                  'signed_at': DateTime.now().toIso8601String(),
+                  'provider_id': userId,
+                  // Also update the content with current controller values
+                  'content': {
+                    'hpi': _hpiController.text.trim(),
+                    'ros': _rosController.text.trim(),
+                    'physical_exam': _examController.text.trim(),
+                    'assessment_and_plan': _planController.text.trim(),
+                  }
+                }).eq('id', widget.noteId ?? ''); // Note: this assumes noteId is provided for signing
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('✅ Note successfully signed and locked for audit.'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving signature: $e')));
+              }
             },
             child: const Text('Confirm & Sign'),
           )

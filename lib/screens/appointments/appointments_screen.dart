@@ -236,15 +236,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   void _showNewAppointmentDialog() {
     final reasonCtrl = TextEditingController();
+    final patientIdCtrl = TextEditingController(); // Basic for demo, should be a selector
     String selectedType = 'office';
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('New Appointment'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            TextField(controller: patientIdCtrl, decoration: const InputDecoration(labelText: 'Patient ID (UUID)')),
+            const SizedBox(height: 12),
             TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: 'Reason for Visit')),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -261,7 +264,30 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Save')),
+          ElevatedButton(
+            onPressed: () async {
+              final pId = patientIdCtrl.text.trim();
+              if (pId.isEmpty) return;
+              
+              try {
+                await Supabase.instance.client.from('appointments').insert({
+                  'patient_id': pId,
+                  'reason': reasonCtrl.text.trim(),
+                  'visit_type': selectedType,
+                  'appointment_date': DateTime.now().add(const Duration(days: 1)).toIso8601String(), // Tomorrow by default
+                  'status': 'scheduled',
+                });
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  _loadAppointments();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Appointment Scheduled')));
+                }
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
