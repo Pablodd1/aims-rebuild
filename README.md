@@ -1,16 +1,49 @@
-# aims_rebuild
+# AIMS Rebuild - Real-Time Deployment Dashboard
 
-A new Flutter project.
+Full-stack app with Next.js frontend and Express backend, powered by Supabase for real-time deployment tracking.
 
-## Getting Started
+## Stack
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Express.js
+- **Database**: Supabase (PostgreSQL)
+- **Deploy**: Vercel
 
-This project is a starting point for a Flutter application.
+## Setup
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+# Frontend
+cd frontend && npm install
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+# Backend  
+cd backend && npm install
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Environment Variables
+
+Set in Vercel dashboard:
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_ANON_KEY` - Your Supabase anon key
+
+## Database Schema (Supabase)
+
+```sql
+CREATE TABLE deployments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  url TEXT,
+  status TEXT DEFAULT 'pending',
+  project TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ
+);
+
+ALTER TABLE deployments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all" ON deployments FOR ALL USING (true);
+```
+
+## Deploy
+
+```bash
+vercel --prod
+```

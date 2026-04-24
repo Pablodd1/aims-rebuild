@@ -1,46 +1,36 @@
-# Flutter
-/build/
-.dart_tool/
-.packages
-.pub/
-*.iml
-*.ipr
-*.iws
-.idea/
+# Dependencies
+node_modules/
 
-# Android
-/android/app/debug/
-/android/app/profile/
-/android/app/release/
-*.apk
-*.aab
+# Build outputs
+.next/
+out/
+dist/
 
-# iOS
-/ios/.symlinks/
-/ios/Pods/
-/ios/Flutter/Flutter.framework
-/ios/Flutter/Flutter.podspec
-
-# macOS
-/macos/Flutter/ephemeral/
-
-# Windows
-/windows/flutter/ephemeral/
-
-# Linux
-/linux/flutter/ephemeral/
-
-# Web
-/web/favicon.png
-
-# Env & Secrets - NEVER commit
+# Environment
 .env
-.env.*
-*.pem
-*.key
+.env.local
+.env.*.local
 
-# Misc
-.DS_Store
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
-pubspec.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Flutter backup
+*_flutter/
+*_flutter.yaml
+!.flutter-plugins.bak
+!.flutter-plugins-dependencies.bak
+!.metadata.bak
+
+# Vercel
+.vercel
